@@ -1,0 +1,28 @@
+Aadhar number, issued by UIDAI, is a 12-digit unique identifier used for identity verification in India. Citizens provide demographic and biometric information to obtain an Aadhar card. It is commonly used for linking bank accounts, filing taxes, and accessing government subsidies.
+
+PAN (Permanent Account Number) is a 10-character alphanumeric identifier issued by the Income Tax Department. It is required for filing income tax returns, opening investment accounts, and performing high-value financial transactions.
+
+Other related identifiers include:
+- Passport number: Used for international travel and identification.
+- Voter ID: Used for casting votes in elections.
+- Driving License: Used for driving vehicles and as proof of identity.
+- Ration Card: Used for purchasing subsidized food and fuel.
+- Bank account number: Linked with KYC documents including Aadhar and PAN.
+
+Common operations involving these identifiers:
+- Verification of identity in digital and offline services.
+- Linking Aadhar with PAN for tax and subsidy purposes.
+- Updating personal details such as address or phone number.
+- Securing accounts with OTP or biometric authentication.
+- Filing taxes and receiving refunds.
+
+Sensitive data should always be protected. Never share Aadhar, PAN, or bank account numbers publicly. Organizations often use hashed or masked versions of these identifiers for processing to ensure privacy.
+
+Terms commonly associated with identity and finance:
+KYC, e-KYC, OTP, biometric authentication, tax returns, government subsidy, unique identifier, verification, account linking, privacy, authentication, digital ID.
+
+Example context sentences (mock data):
+- "Please provide your Aadhar number for verification purposes."
+- "Link your PAN with your bank account to file taxes."
+- "The driving license and voter ID were used for identity validation."
+- "OTP sent to the registered mobile number verifies your identity."
