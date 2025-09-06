@@ -1,0 +1,36 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Data files (optional: if you don't want to track trained models)
+data/context_model.joblib
+
+# Editor/IDE specific
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+
+# Testing outputs
+testing_folder/*.txt  # optional if you don't want test files in git
+
+# Ignore Python egg / build
+*.egg-info/
+dist/
+build/

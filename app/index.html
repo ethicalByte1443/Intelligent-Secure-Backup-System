@@ -1,0 +1,177 @@
+<!-- app/static/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SecureAI Backup - DLP Scan</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input[type=text]{ width: 520px; padding:6px; }
+    pre{ background:#f6f6f6; padding:10px; border-radius:6px; max-height:400px; overflow:auto; }
+    .file { margin-bottom:12px; padding:8px; border:1px solid #ddd; border-radius:6px; }
+    .hits { margin-top:6px; }
+    .hit-type { font-weight:600; }
+    .snippet { font-family:monospace; background:#fff; padding:4px; display:block; margin:4px 0; border-radius:4px; }
+    .confidence { padding:3px 8px; border-radius:4px; background:#e8f4ff; display:inline-block; margin-left:8px; }
+    .risk-high { background:#ffd6d6; padding:3px 8px; border-radius:4px; }
+    .risk-medium { background:#fff1cc; padding:3px 8px; border-radius:4px; }
+    .risk-low { background:#e6ffed; padding:3px 8px; border-radius:4px; }
+    button { padding:6px 10px; margin-left:8px; }
+  </style>
+</head>
+<body>
+  <h2>🔎 DLP Folder Scanner (v2)</h2>
+
+  <form id="scanForm">
+    <label>Folder path: </label>
+    <input type="text" id="path" value="./test_folder" required>
+    <button type="submit">Scan</button>
+    <button type="button" id="exportJson" disabled>Export JSON</button>
+    <button type="button" id="exportCsv" disabled>Export CSV</button>
+  </form>
+
+  <h3>Result</h3>
+  <div id="summary"></div>
+  <div id="files"></div>
+  <pre id="raw"></pre>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+function riskClass(label) {
+  if (!label) return "";
+  if (label.toLowerCase() === "high") return "risk-high";
+  if (label.toLowerCase() === "medium") return "risk-medium";
+  return "risk-low";
+}
+
+document.getElementById("scanForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  document.getElementById("summary").innerText = "Scanning...";
+  document.getElementById("files").innerHTML = "";
+  document.getElementById("raw").innerText = "";
+  document.getElementById("exportJson").disabled = true;
+  document.getElementById("exportCsv").disabled = true;
+
+  const path = document.getElementById("path").value;
+  try {
+    const res = await fetch(`${API_BASE}/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rootPath: path })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      document.getElementById("summary").innerText = "Server error: " + txt;
+      return;
+    }
+
+    const data = await res.json();
+    document.getElementById("raw").innerText = JSON.stringify(data, null, 2);
+
+    if (data.detail || data.error) {
+      document.getElementById("summary").innerText = "Error: " + (data.detail || data.error);
+      return;
+    }
+
+    const totalFiles = Object.keys(data.findings || {}).length;
+    document.getElementById("summary").innerText =
+      `Scanned: ${data.scanned_path}\nTotal files scanned: ${data.total_files_scanned}\nMatching files: ${totalFiles}`;
+
+    const filesDiv = document.getElementById("files");
+    const findings = data.findings || {};
+
+    if (totalFiles === 0) {
+      filesDiv.innerHTML = "<p>No PII detected.</p>";
+    } else {
+      for (const [filePath, info] of Object.entries(findings)) {
+        const container = document.createElement("div");
+        container.className = "file";
+
+        const heading = document.createElement("div");
+        const riskLabel = info.risk_label || "Low";
+        const riskScore = info.risk_score != null ? info.risk_score : 0;
+
+        heading.innerHTML = `<strong>${filePath}</strong> <span class="confidence">${info.confidence}</span>`;
+
+        const riskNode = document.createElement("span");
+        riskNode.className = riskClass(riskLabel);
+        riskNode.innerText = ` Risk: ${riskLabel} (${riskScore})`;
+        heading.appendChild(riskNode);
+        container.appendChild(heading);
+
+        const hitsDiv = document.createElement("div");
+        hitsDiv.className = "hits";
+
+        const hits = info.hits || {};
+        for (const [htype, hvals] of Object.entries(hits)) {
+          const typeNode = document.createElement("div");
+          typeNode.innerHTML = `<span class="hit-type">${htype}</span>: ${hvals.join(", ")}`;
+          hitsDiv.appendChild(typeNode);
+
+          const snippets = (info.snippets && info.snippets[htype]) || [];
+          for (const sn of snippets) {
+            const snNode = document.createElement("div");
+            snNode.className = "snippet";
+            snNode.textContent = sn;
+            hitsDiv.appendChild(snNode);
+          }
+        }
+
+        container.appendChild(hitsDiv);
+        filesDiv.appendChild(container);
+      }
+
+      document.getElementById("exportJson").disabled = false;
+      document.getElementById("exportCsv").disabled = false;
+      window.__last_scan = data;
+    }
+
+  } catch (err) {
+    document.getElementById("summary").innerText = "Fetch error: " + err;
+  }
+});
+
+async function exportReport(fmt) {
+  if (!window.__last_scan) return;
+  const data = window.__last_scan;
+
+  let payload = {
+    format: fmt,
+    data: data
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      alert("Export failed: " + text);
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fmt === "json" ? "scan_report.json" : "scan_report.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    alert("Export error: " + err);
+  }
+}
+
+document.getElementById("exportJson").addEventListener("click", () => exportReport("json"));
+document.getElementById("exportCsv").addEventListener("click", () => exportReport("csv"));
+</script>
+</body>
+</html>

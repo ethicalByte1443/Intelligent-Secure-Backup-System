@@ -1,0 +1,18 @@
+# FastAPI web framework
+fastapi
+uvicorn[standard]
+
+# Environment variables
+python-dotenv
+
+# Machine Learning
+scikit-learn
+joblib
+
+# NLP / AI embeddings
+sentence-transformers
+torch  # backend for sentence-transformers
+numpy
+
+# Optional utils
+pandas  # useful if you want to export reports to CSV/Excel
