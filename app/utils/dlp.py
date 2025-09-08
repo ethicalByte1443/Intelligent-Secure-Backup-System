@@ -34,7 +34,16 @@ CC_RE = re.compile(r"\b(?:\d[ -]*?){13,19}\b")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+91[\-\s]?|0)?[6-9]\d{9}\b")
 PASSPORT_RE = re.compile(r"\b[A-Z][0-9]{7}\b")
-PASSWORD_RE = re.compile(r"(password|passwd|pwd|passcode|pass:)\s*[:#\-]?\s*([^\s,;]{4,40})", re.IGNORECASE)
+PASSWORD_RE = re.compile(
+    r"(password|passwd|pwd|passcode|pass:)\s*[:#\-]?\s*([^\s,;]{4,40})",
+    re.IGNORECASE
+)
+
+# ✅ NEW regex
+BANK_AC_RE = re.compile(r"\b\d{9,18}\b")   # Bank account numbers
+IFSC_RE = re.compile(r"\b[A-Z]{4}0[A-Z0-9]{6}\b")  # IFSC code format
+CVV_RE = re.compile(r"\b\d{3,4}\b")  # 3 or 4 digit CVV
+
 
 SENSITIVE_KEYWORDS = [
     "aadhaar", "pan", "credit card", "card number", "cvv", "upi",
@@ -165,9 +174,6 @@ def risk_label(score: int) -> str:
 # -----------------------------
 # Scan single file (Hybrid)
 # -----------------------------
-# -----------------------------
-# Scan single file (Hybrid)
-# -----------------------------
 def scan_file(path: Path) -> Dict:
     text = _read_file_safe(path)
     if not text:
@@ -196,6 +202,34 @@ def scan_file(path: Path) -> Dict:
         hits["password"] = m
         spans = [(x.start(), x.end()) for x in PASSWORD_RE.finditer(text)]
         snippets["password"] = _find_snippets(text, spans)
+
+# Bank Account
+    m = [x.group(0) for x in BANK_AC_RE.finditer(text)]
+    if m:
+        hits["bank_account"] = m
+        spans = [(x.start(), x.end()) for x in BANK_AC_RE.finditer(text)]
+        snippets["bank_account"] = _find_snippets(text, spans)
+
+    # IFSC Code
+    m = [x.group(0) for x in IFSC_RE.finditer(text)]
+    if m:
+        hits["ifsc"] = m
+        spans = [(x.start(), x.end()) for x in IFSC_RE.finditer(text)]
+        snippets["ifsc"] = _find_snippets(text, spans)
+
+    # CVV (special handling: must appear near "credit card" or "CVV")
+    m = [x.group(0) for x in CVV_RE.finditer(text)]
+    cvv_hits = []
+    cvv_spans = []
+    for x in CVV_RE.finditer(text):
+        snippet = text[max(0, x.start() - 10): x.end() + 10].lower()
+        if "cvv" in snippet or "card" in snippet:   # ✅ avoid false positives
+            cvv_hits.append(x.group(0))
+            cvv_spans.append((x.start(), x.end()))
+    if cvv_hits:
+        hits["cvv"] = cvv_hits
+        snippets["cvv"] = _find_snippets(text, cvv_spans)
+
 
     # Credit Card
     cc_candidates = [m.group(0) for m in CC_RE.finditer(text)]

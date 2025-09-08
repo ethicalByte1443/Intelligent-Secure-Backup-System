@@ -1,0 +1,11 @@
+Employee salary slip for June 2025
+
+Name: Rahul Sharma
+Bank Account: 1234567890
+IFSC: SBIN0001234
+Credit Card Number: 4111 1111 1111 1111
+CVV: 123
+Passport: M1234567
+PAN: ABCDE1234F
+
+This document is strictly confidential and must not be shared outside the payroll department.
