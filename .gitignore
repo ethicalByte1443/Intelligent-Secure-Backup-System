@@ -34,3 +34,27 @@ testing_folder/*.txt  # optional if you don't want test files in git
 *.egg-info/
 dist/
 build/
+
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# Sensitive keys and models
+app/data/backup_key.key
+*.joblib
+
+# Backup data (local only)
+app/data/backups/
+app/data/metadata.json
+
+# System/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

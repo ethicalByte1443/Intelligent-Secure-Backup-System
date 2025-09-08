@@ -165,6 +165,9 @@ def risk_label(score: int) -> str:
 # -----------------------------
 # Scan single file (Hybrid)
 # -----------------------------
+# -----------------------------
+# Scan single file (Hybrid)
+# -----------------------------
 def scan_file(path: Path) -> Dict:
     text = _read_file_safe(path)
     if not text:
@@ -217,8 +220,13 @@ def scan_file(path: Path) -> Dict:
     ctx = context_score(text)
 
     # Risk
-    risk = compute_risk_score(hits, conf, ctx)
-    label = risk_label(risk)
+    if not hits:
+        # ✅ No actual sensitive info → force safe result
+        risk = 0
+        label = "Low"
+    else:
+        risk = compute_risk_score(hits, conf, ctx)
+        label = risk_label(risk)
 
     return {
         "hits": hits,
@@ -228,6 +236,7 @@ def scan_file(path: Path) -> Dict:
         "risk_score": risk,
         "risk_label": label
     }
+
 
 # -----------------------------
 # Scan directory

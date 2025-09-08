@@ -8,6 +8,9 @@ import io
 import csv
 import json
 from utils.dlp import scan_directory
+from routes import backup_routes  # 👈 import new routes
+
+
 
 app = FastAPI(title="SecureAI Backup - DLP v2")
 
@@ -26,6 +29,11 @@ async def log_requests(request: Request, call_next):
     duration = time.time() - start
     print(f"{request.method} {request.url.path} -> {response.status_code} ({duration:.3f}s)")
     return response
+
+
+
+app.include_router(backup_routes.router)
+
 
 @app.get("/")
 def root():
@@ -98,3 +106,5 @@ def export_endpoint(payload: dict):
         })
 
     raise HTTPException(status_code=400, detail="Unsupported format")
+
+
