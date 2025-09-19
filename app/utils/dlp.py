@@ -276,6 +276,7 @@ def scan_file(path: Path) -> Dict:
 # Scan directory
 # -----------------------------
 def scan_directory(root_path: str) -> Dict[str, Dict]:
+    print("scan directory called : -> ")
     root = Path(root_path)
     results = {}
     if not root.exists():
@@ -290,4 +291,5 @@ def scan_directory(root_path: str) -> Dict[str, Dict]:
                 results[str(p)] = res
         except Exception:
             continue
+    print(results)
     return results
