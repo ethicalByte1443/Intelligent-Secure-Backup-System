@@ -1,204 +1,348 @@
-<!-- app/static/backup_test.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>SecureAI Backup - Test UI</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: Arial, sans-serif; margin: 18px; max-width:1100px; }
-    h1 { margin-bottom: 6px; }
-    .panel { border:1px solid #e0e0e0; padding:12px; border-radius:8px; margin-bottom:12px; background:#fafafa; }
-    label { display:inline-block; width:120px; font-weight:600; }
-    input[type=text]{ width:420px; padding:6px; margin-right:8px; }
-    button { padding:6px 10px; margin:4px; cursor:pointer; }
-    .small { font-size:0.9em; color:#555; }
-    .backups { margin-top:10px; }
-    .backup-item { border:1px solid #ddd; padding:8px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
-    .meta { font-size:0.9em; color:#333; }
-    pre { background:#f6f6f6; padding:10px; border-radius:6px; max-height:340px; overflow:auto; }
-    .controls { margin-top:8px; }
-  </style>
-</head>
-<body>
-  <h1>SecureAI Backup — Test UI</h1>
+  <head>
+    <meta charset="utf-8" />
+    <title>SecureAI Backup - Test UI</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 18px;
+        max-width: 1100px;
+      }
+      h1 {
+        margin-bottom: 6px;
+      }
+      .panel {
+        border: 1px solid #e0e0e0;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: #fafafa;
+      }
+      label {
+        display: inline-block;
+        width: 120px;
+        font-weight: 600;
+      }
+      input[type="text"] {
+        width: 420px;
+        padding: 6px;
+        margin-right: 8px;
+      }
+      button {
+        padding: 6px 10px;
+        margin: 4px;
+        cursor: pointer;
+      }
+      .small {
+        font-size: 0.9em;
+        color: #555;
+      }
+      .backups {
+        margin-top: 10px;
+      }
+      .backup-item {
+        border: 1px solid #ddd;
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .meta {
+        font-size: 0.9em;
+        color: #333;
+      }
+      pre {
+        background: #f6f6f6;
+        padding: 10px;
+        border-radius: 6px;
+        max-height: 340px;
+        overflow: auto;
+      }
+      .controls {
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SecureAI Backup — Test UI</h1>
 
-  <div class="panel">
-    <h3>Create Backup (POST /backup)</h3>
-    <div>
-      <label>Source Path</label>
-      <input type="text" id="sourcePath" placeholder="./testing_folder" value="./testing_folder">
+    <!-- Create Backup -->
+    <div class="panel">
+      <h3>Create Backup (POST /backup)</h3>
+      <div>
+        <label>Source Path</label>
+        <input
+          type="text"
+          id="sourcePath"
+          placeholder="./testing_folder"
+          value="./testing_folder"
+        />
+      </div>
+      <div style="margin-top: 8px">
+        <label>Backup Name</label>
+        <input
+          type="text"
+          id="backupName"
+          placeholder="my_backup_01"
+          value="my_backup_01"
+        />
+      </div>
+      <div class="controls">
+        <button id="btnCreate">Create Backup</button>
+        <button id="btnScanOnly">Scan Only (no backup)</button>
+        <button id="btnRefresh">Refresh List</button>
+      </div>
+      <div id="createResult" style="margin-top: 10px"></div>
     </div>
-    <div style="margin-top:8px;">
-      <label>Backup Name</label>
-      <input type="text" id="backupName" placeholder="my_backup_01" value="my_backup_01">
+
+    <!-- Restore Backup -->
+    <div class="panel">
+      <h3>Restore Backup (POST /restore)</h3>
+      <div>
+        <label>Backup Name</label>
+        <input type="text" id="restoreName" placeholder="my_backup_01" />
+      </div>
+      <div style="margin-top: 8px">
+        <label>Target Path</label>
+        <input type="text" id="restorePath" placeholder="./restored_here" />
+      </div>
+      <div class="controls">
+        <button id="btnRestore">Restore</button>
+      </div>
+      <div id="restoreResult" style="margin-top: 10px"></div>
     </div>
-    <div class="controls">
-      <button id="btnCreate">Create Backup</button>
-      <button id="btnScanOnly">Scan Only (no backup)</button>
-      <button id="btnRefresh">Refresh List</button>
+
+    <!-- Backup List -->
+    <div class="panel">
+      <h3>Backups (GET /backups)</h3>
+      <div class="small">List of stored backups and quick actions</div>
+      <div id="backupsList" class="backups"></div>
     </div>
-    <div id="createResult" style="margin-top:10px;"></div>
-  </div>
 
-  <div class="panel">
-    <h3>Backups (GET /backups)</h3>
-    <div class="small">List of stored backups and quick actions</div>
-    <div id="backupsList" class="backups"></div>
-  </div>
+    <!-- Details -->
+    <div class="panel">
+      <h3>Backup Details / Raw API Output</h3>
+      <div id="detailInfo" class="meta small"></div>
+      <pre id="rawOutput">No output yet.</pre>
+    </div>
 
-  <div class="panel">
-    <h3>Backup Details / Raw API Output</h3>
-    <div id="detailInfo" class="meta small"></div>
-    <pre id="rawOutput">No output yet.</pre>
-  </div>
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
 
-<script>
-const API_BASE = "http://127.0.0.1:8000";
+      function showRaw(obj) {
+        document.getElementById("rawOutput").textContent = JSON.stringify(
+          obj,
+          null,
+          2
+        );
+      }
 
-function showRaw(obj){
-  document.getElementById("rawOutput").textContent = JSON.stringify(obj, null, 2);
-}
+      async function createBackup(source, name) {
+        const out = document.getElementById("createResult");
+        out.textContent = "Creating backup...";
+        try {
+          const res = await fetch(`${API_BASE}/backup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sourcePath: source, backupName: name }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            out.innerHTML = `<strong style="color:crimson">Error:</strong> ${
+              data.detail || data.message || JSON.stringify(data)
+            }`;
+            showRaw(data);
+            return;
+          }
+          out.innerHTML = `<strong style="color:green">Success:</strong> Backup '${name}' created.`;
+          showRaw(data);
+          await loadBackups();
+        } catch (err) {
+          out.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
+        }
+      }
 
-async function createBackup(source, name){
-  const out = document.getElementById("createResult");
-  out.textContent = "Creating backup...";
-  try {
-    const res = await fetch(`${API_BASE}/backup`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ sourcePath: source, backupName: name })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      out.innerHTML = `<strong style="color:crimson">Error:</strong> ${data.detail || data.message || JSON.stringify(data)}`;
-      showRaw(data);
-      return;
-    }
-    out.innerHTML = `<strong style="color:green">Success:</strong> Backup '${name}' created.`;
-    showRaw(data);
-    await loadBackups();
-  } catch (err) {
-    out.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
-  }
-}
+      async function scanOnly(source) {
+        const out = document.getElementById("createResult");
+        out.textContent = "Scanning (no backup)...";
+        try {
+          const res = await fetch(`${API_BASE}/scan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rootPath: source }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            out.innerHTML = `<strong style="color:crimson">Error:</strong> ${
+              data.detail || JSON.stringify(data)
+            }`;
+            showRaw(data);
+            return;
+          }
+          out.innerHTML = `<strong style="color:green">Scan complete.</strong> Matching files: ${
+            data.matching_files_count || 0
+          }`;
+          showRaw(data);
+        } catch (err) {
+          out.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
+        }
+      }
 
-async function scanOnly(source){
-  const out = document.getElementById("createResult");
-  out.textContent = "Scanning (no backup)...";
-  try {
-    const res = await fetch(`${API_BASE}/scan`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ rootPath: source })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      out.innerHTML = `<strong style="color:crimson">Error:</strong> ${data.detail || JSON.stringify(data)}`;
-      showRaw(data);
-      return;
-    }
-    out.innerHTML = `<strong style="color:green">Scan complete.</strong> Matching files: ${data.matching_files_count || 0}`;
-    showRaw(data);
-  } catch (err) {
-    out.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
-  }
-}
+      async function restoreBackup(name, target) {
+        const out = document.getElementById("restoreResult");
+        out.textContent = "Restoring backup...";
+        try {
+          const res = await fetch(`${API_BASE}/restore`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backupName: name, targetPath: target }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            out.innerHTML = `<strong style="color:crimson">Error:</strong> ${
+              data.detail || JSON.stringify(data)
+            }`;
+            showRaw(data);
+            return;
+          }
+          out.innerHTML = `<strong style="color:green">Success:</strong> Restored '${name}' to '${target}'.<br>
+                     Files restored: ${data.restoredFiles} <br>
+                     At: ${data.restoredAt}`;
+          showRaw(data);
+        } catch (err) {
+          out.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
+        }
+      }
 
-async function loadBackups(){
-  const container = document.getElementById("backupsList");
-  container.innerHTML = "Loading...";
-  try {
-    const res = await fetch(`${API_BASE}/backups`);
-    const data = await res.json();
-    if (!res.ok) {
-      container.innerHTML = `<span style="color:crimson">Error: ${JSON.stringify(data)}</span>`;
-      showRaw(data);
-      return;
-    }
-    if (!Array.isArray(data) || data.length === 0){
-      container.innerHTML = "<div class='small'>No backups found.</div>";
-      showRaw(data);
-      return;
-    }
-    container.innerHTML = "";
-    data.forEach(entry => {
-      const div = document.createElement("div");
-      div.className = "backup-item";
-      const left = document.createElement("div");
-      left.innerHTML = `<div><strong>${entry.backupName}</strong></div>
+      async function loadBackups() {
+        const container = document.getElementById("backupsList");
+        container.innerHTML = "Loading...";
+        try {
+          const res = await fetch(`${API_BASE}/backups`);
+          const data = await res.json();
+          if (!res.ok) {
+            container.innerHTML = `<span style="color:crimson">Error: ${JSON.stringify(
+              data
+            )}</span>`;
+            showRaw(data);
+            return;
+          }
+          if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = "<div class='small'>No backups found.</div>";
+            showRaw(data);
+            return;
+          }
+          container.innerHTML = "";
+          data.forEach((entry) => {
+            const div = document.createElement("div");
+            div.className = "backup-item";
+            const left = document.createElement("div");
+            left.innerHTML = `<div><strong>${entry.backupName}</strong></div>
                         <div class="meta">${entry.createdAt} — total files: ${entry.totalFiles} — sensitive: ${entry.sensitiveFiles} — risk: ${entry.riskLabel}</div>`;
-      const right = document.createElement("div");
-      const btnView = document.createElement("button");
-      btnView.textContent = "View";
-      btnView.onclick = () => viewBackup(entry.backupName);
-      const btnDelete = document.createElement("button");
-      btnDelete.textContent = "Delete";
-      btnDelete.onclick = () => deleteBackup(entry.backupName);
-      right.appendChild(btnView);
-      right.appendChild(btnDelete);
-      div.appendChild(left);
-      div.appendChild(right);
-      container.appendChild(div);
-    });
-    showRaw(data);
-  } catch (err) {
-    container.innerHTML = `<span style="color:crimson">Fetch error: ${err}</span>`;
-  }
-}
+            const right = document.createElement("div");
+            const btnView = document.createElement("button");
+            btnView.textContent = "View";
+            btnView.onclick = () => viewBackup(entry.backupName);
+            const btnDelete = document.createElement("button");
+            btnDelete.textContent = "Delete";
+            btnDelete.onclick = () => deleteBackup(entry.backupName);
+            right.appendChild(btnView);
+            right.appendChild(btnDelete);
+            div.appendChild(left);
+            div.appendChild(right);
+            container.appendChild(div);
+          });
+          showRaw(data);
+        } catch (err) {
+          container.innerHTML = `<span style="color:crimson">Fetch error: ${err}</span>`;
+        }
+      }
 
-async function viewBackup(name){
-  const info = document.getElementById("detailInfo");
-  info.textContent = `Loading details for ${name}...`;
-  try {
-    const res = await fetch(`${API_BASE}/backup/${encodeURIComponent(name)}`);
-    const data = await res.json();
-    if (!res.ok) {
-      info.innerHTML = `<strong style="color:crimson">Error:</strong> ${data.detail || JSON.stringify(data)}`;
-      showRaw(data);
-      return;
-    }
-    info.innerHTML = `<strong>${data.backupName}</strong> — created: ${data.createdAt} — files: ${data.totalFiles} — sensitive: ${data.sensitiveFiles}`;
-    showRaw(data);
-  } catch (err) {
-    info.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
-  }
-}
+      async function viewBackup(name) {
+        const info = document.getElementById("detailInfo");
+        info.textContent = `Loading details for ${name}...`;
+        try {
+          const res = await fetch(
+            `${API_BASE}/backup/${encodeURIComponent(name)}`
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            info.innerHTML = `<strong style="color:crimson">Error:</strong> ${
+              data.detail || JSON.stringify(data)
+            }`;
+            showRaw(data);
+            return;
+          }
+          info.innerHTML = `<strong>${data.backupName}</strong> — created: ${data.createdAt} — files: ${data.totalFiles} — sensitive: ${data.sensitiveFiles}`;
+          showRaw(data);
+        } catch (err) {
+          info.innerHTML = `<strong style="color:crimson">Fetch error:</strong> ${err}`;
+        }
+      }
 
-async function deleteBackup(name){
-  if (!confirm(`Delete backup '${name}'? This removes files permanently from server.`)) return;
-  try {
-    const res = await fetch(`${API_BASE}/backup/${encodeURIComponent(name)}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) {
-      alert("Delete failed: " + (data.detail || JSON.stringify(data)));
-      showRaw(data);
-      return;
-    }
-    alert(data.message || "Deleted");
-    showRaw(data);
-    await loadBackups();
-  } catch (err) {
-    alert("Fetch error: " + err);
-  }
-}
+      async function deleteBackup(name) {
+        if (
+          !confirm(
+            `Delete backup '${name}'? This removes files permanently from server.`
+          )
+        )
+          return;
+        try {
+          const res = await fetch(
+            `${API_BASE}/backup/${encodeURIComponent(name)}`,
+            { method: "DELETE" }
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            alert("Delete failed: " + (data.detail || JSON.stringify(data)));
+            showRaw(data);
+            return;
+          }
+          alert(data.message || "Deleted");
+          showRaw(data);
+          await loadBackups();
+        } catch (err) {
+          alert("Fetch error: " + err);
+        }
+      }
 
-// Wire up buttons
-document.getElementById("btnCreate").addEventListener("click", () => {
-  const source = document.getElementById("sourcePath").value.trim();
-  const name = document.getElementById("backupName").value.trim();
-  if (!source || !name) { alert("Provide sourcePath and backupName"); return; }
-  createBackup(source, name);
-});
-document.getElementById("btnScanOnly").addEventListener("click", () => {
-  const source = document.getElementById("sourcePath").value.trim();
-  if (!source) { alert("Provide sourcePath"); return; }
-  scanOnly(source);
-});
-document.getElementById("btnRefresh").addEventListener("click", loadBackups);
+      // Wire up buttons
+      document.getElementById("btnCreate").addEventListener("click", () => {
+        const source = document.getElementById("sourcePath").value.trim();
+        const name = document.getElementById("backupName").value.trim();
+        if (!source || !name) {
+          alert("Provide sourcePath and backupName");
+          return;
+        }
+        createBackup(source, name);
+      });
+      document.getElementById("btnScanOnly").addEventListener("click", () => {
+        const source = document.getElementById("sourcePath").value.trim();
+        if (!source) {
+          alert("Provide sourcePath");
+          return;
+        }
+        scanOnly(source);
+      });
+      document
+        .getElementById("btnRefresh")
+        .addEventListener("click", loadBackups);
+      document.getElementById("btnRestore").addEventListener("click", () => {
+        const name = document.getElementById("restoreName").value.trim();
+        const target = document.getElementById("restorePath").value.trim();
+        if (!name || !target) {
+          alert("Provide backupName and targetPath");
+          return;
+        }
+        restoreBackup(name, target);
+      });
 
-// initial load
-loadBackups();
-</script>
-</body>
+      // initial load
+      loadBackups();
+    </script>
+  </body>
 </html>

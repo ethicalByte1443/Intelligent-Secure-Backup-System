@@ -1,121 +1,3 @@
-# import os
-# import json
-# import shutil
-# from datetime import datetime
-# from pathlib import Path
-# from fastapi import APIRouter, HTTPException
-# from utils.dlp import scan_directory
-
-# router = APIRouter()
-
-# BACKUP_DIR = Path("data/backups")
-# METADATA_FILE = BACKUP_DIR / "metadata.json"
-
-# # ensure folders exist
-# BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-# if not METADATA_FILE.exists():
-#     with open(METADATA_FILE, "w") as f:
-#         json.dump([], f)
-
-
-# def load_metadata():
-#     with open(METADATA_FILE, "r") as f:
-#         return json.load(f)
-
-
-# def save_metadata(data):
-#     with open(METADATA_FILE, "w") as f:
-#         json.dump(data, f, indent=2)
-
-
-# @router.post("/backup")
-# def create_backup(payload: dict):
-#     source = payload.get("sourcePath")
-#     name = payload.get("backupName")
-
-#     if not source or not name:
-#         raise HTTPException(status_code=400, detail="sourcePath and backupName required")
-#     if not os.path.exists(source):
-#         raise HTTPException(status_code=400, detail="Source path does not exist")
-
-#     backup_path = BACKUP_DIR / name
-#     if backup_path.exists():
-#         raise HTTPException(status_code=400, detail="Backup name already exists")
-
-#     # Run DLP scan before backup
-#     findings = scan_directory(source)
-
-#     # Perform copy
-#     shutil.copytree(source, backup_path)
-
-#     # Prepare metadata entry
-#     total_files = sum(len(files) for _, _, files in os.walk(source))
-#     sensitive_files = len(findings)
-#     risk_label = "Low"
-#     if sensitive_files > 0:
-#         risk_scores = [info.get("risk_score", 0) for info in findings.values()]
-#         avg_score = sum(risk_scores) / len(risk_scores)
-#         if avg_score >= 70:
-#             risk_label = "High"
-#         elif avg_score >= 35:
-#             risk_label = "Medium"
-
-#     entry = {
-#         "backupName": name,
-#         "sourcePath": os.path.abspath(source),
-#         "backupPath": str(backup_path),
-#         "createdAt": datetime.now().isoformat(),
-#         "totalFiles": total_files,
-#         "sensitiveFiles": sensitive_files,
-#         "riskLabel": risk_label,
-#     }
-
-#     # Save metadata
-#     data = load_metadata()
-#     data.append(entry)
-#     save_metadata(data)
-
-#     return {"message": "Backup created successfully", "metadata": entry}
-
-
-# @router.get("/backups")
-# def list_backups():
-#     return load_metadata()
-
-
-# @router.get("/backup/{name}")
-# def get_backup(name: str):
-#     data = load_metadata()
-#     for entry in data:
-#         if entry["backupName"] == name:
-#             return entry
-#     raise HTTPException(status_code=404, detail="Backup not found")
-
-
-# @router.delete("/backup/{name}")
-# def delete_backup(name: str):
-#     data = load_metadata()
-#     entry = None
-#     for e in data:
-#         if e["backupName"] == name:
-#             entry = e
-#             break
-#     if not entry:
-#         raise HTTPException(status_code=404, detail="Backup not found")
-
-#     # Remove backup folder
-#     backup_path = Path(entry["backupPath"])
-#     if backup_path.exists():
-#         shutil.rmtree(backup_path)
-
-#     # Update metadata
-#     data = [e for e in data if e["backupName"] != name]
-#     save_metadata(data)
-
-#     return {"message": f"Backup '{name}' deleted successfully"}
-
-
-# app/routes/backup_routes.py
 import os
 import re
 import json
@@ -142,6 +24,34 @@ if not METADATA_FILE.exists():
 # -------------------------
 # Helpers
 # -------------------------
+
+# from Crypto.Cipher import AES
+import shutil
+import re
+from utils.crypto_utils import decrypt_str
+
+ENC_PATTERN = re.compile(r"<ENC>[^ \n\r\t<]+")  # match tokens like <ENC>abc...
+
+def _process_and_restore_file(src_file: Path, dest_file: Path):
+    try:
+        text = src_file.read_text(encoding="utf-8", errors="ignore")
+
+        def repl(match):
+            token = match.group(0)
+            try:
+                return decrypt_str(token)
+            except Exception:
+                return token  # agar decrypt fail hua to token as-is rakhna
+
+        restored_text = ENC_PATTERN.sub(repl, text)
+        dest_file.write_text(restored_text, encoding="utf-8")
+        return True
+
+    except Exception as e:
+        shutil.copy2(src_file, dest_file)
+        return False
+
+
 def load_metadata():
     with open(METADATA_FILE, "r", encoding="utf-8") as f:
         try:
@@ -336,3 +246,45 @@ def delete_backup(name: str):
     save_metadata(data)
 
     return {"message": f"Backup '{name}' deleted successfully"}
+
+
+@router.post("/restore")
+def restore_backup(payload: dict):
+    name = payload.get("backupName")
+    target = payload.get("targetPath")
+
+    if not name or not target:
+        raise HTTPException(status_code=400, detail="backupName and targetPath required")
+
+    # metadata load karo
+    data = load_metadata()
+    entry = next((item for item in data if item["backupName"] == name), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Backup not found")
+
+    backup_path = Path(entry["backupPath"])
+    if not backup_path.exists():
+        raise HTTPException(status_code=400, detail="Backup folder missing")
+
+    restored_files = 0
+    for root, _, files in os.walk(backup_path):
+        rel_root = Path(root).relative_to(backup_path)
+        for fn in files:
+            src_file = Path(root) / fn
+            dest_file = Path(target) / rel_root / fn
+            dest_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            try:
+                # decrypt karke restore (agar encrypted tha)
+                decrypted = _process_and_restore_file(src_file, dest_file)
+            except Exception:
+                shutil.copy2(src_file, dest_file)
+                decrypted = False
+            restored_files += 1
+
+    return {
+        "message": "Restore complete",
+        "backupName": name,
+        "restoredFiles": restored_files,
+        "restoredAt": datetime.now().isoformat()
+    }

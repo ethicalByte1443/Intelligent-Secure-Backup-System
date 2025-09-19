@@ -106,13 +106,13 @@ def compute_context_score_ai(text: str) -> float:
 def load_ml_model():
     global _ML_MODEL_CACHE
     if _ML_MODEL_CACHE is not None:
-        print("load_ml_model ----- 1")
+        # print("load_ml_model ----- 1")
         return _ML_MODEL_CACHE
     if _ML_MODEL_PATH and _ML_MODEL_PATH.exists() and HAS_ML:
         _ML_MODEL_CACHE = joblib.load(_ML_MODEL_PATH)
-        print("load_ml_model ----- 1")
+        # print("load_ml_model ----- 1")
         return _ML_MODEL_CACHE
-    print("load_ml_model ----- 3")
+    # print("load_ml_model ----- 3")
     
     return None
 
@@ -131,7 +131,7 @@ def predict_context_ml(text: str) -> float:
 # -----------------------------
 def context_score(text: str) -> float:
     # Regex / keyword heuristic
-    print("context_score : Started")
+    # print("context_score : Started")
     h = sum(1 for kw in SENSITIVE_KEYWORDS if kw in text.lower())
     h_score = min(1.0, h / 6.0)
     # AI semantic
@@ -139,9 +139,9 @@ def context_score(text: str) -> float:
     # ML model score
     ml_score = predict_context_ml(text)
     # Weighted hybrid
-    print("h_score : ",h_score, " + ai_score : ",ai_score, " + ml_score : ", ml_score)
+    # print("h_score : ",h_score, " + ai_score : ",ai_score, " + ml_score : ", ml_score)
     final = 0.3*h_score + 0.4*ai_score + 0.3*ml_score
-    print(final)
+    # print(final)
     return min(final, 1.0)
 
 # -----------------------------
@@ -149,19 +149,19 @@ def context_score(text: str) -> float:
 # -----------------------------
 def compute_risk_score(hits: Dict, confidence: str, context_score: float) -> int:
     n_types = len(hits)
-    print("Compute_risk_score :", n_types)
-    print("confidence :",confidence)
-    print("context_score :",context_score)
+    # print("Compute_risk_score :", n_types)
+    # print("confidence :",confidence)
+    # print("context_score :",context_score)
     base = 20 * n_types
     conf_map = {"low": 0, "medium": 10, "high": 20}
     conf_boost = conf_map.get(confidence, 0)
-    print("base :",base)
-    print("conf_boost :",conf_boost)
-    print("context_score :",context_score)
+    # print("base :",base)
+    # print("conf_boost :",conf_boost)
+    # print("context_score :",context_score)
     raw = (base + conf_boost) * (1.0 + context_score)
-    print("raw ", raw)
-    print("return ",max(0, min(100, int(round(raw)))))
-    print("-------------------------------")
+    # print("raw ", raw)
+    # print("return ",max(0, min(100, int(round(raw)))))
+    # print("-------------------------------")
     return max(0, min(100, int(round(raw))))
 
 def risk_label(score: int) -> str:
