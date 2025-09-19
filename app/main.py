@@ -53,8 +53,6 @@ def scan_endpoint(payload: dict):
     for _root, _dirs, files in os.walk(root_path):
         total_files += len(files)
 
-    # print(total_files)
-    # print(findings)
     return {
         "scanned_path": os.path.abspath(root_path),
         "total_files_scanned": total_files,
