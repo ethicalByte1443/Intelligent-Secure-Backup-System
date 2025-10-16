@@ -1,4 +1,4 @@
-# SecureAI Backup — Intelligent Backup & Recovery System (English)
+# SecureAI Backup — Intelligent Backup & Recovery System
 
 [See Architecture diagram](https://drive.google.com/file/d/190P-AZAjZDAZOysfTAjr6varqcfhyqxR/view?usp=sharing)
 
