@@ -158,7 +158,7 @@ return  0
 
 ---
 
-## 🔹 Demo Flow (Designed to impress Commvault)
+## 🔹 Demo Flow
 
 1. **Backup Start** → System scans selected data → displays “Sensitive data detected — encrypting”. ✅
 2. **Backup Analysis** → System detects suspicious files flagged as possibly ransomware-encrypted → displays alert. 🚨
@@ -166,7 +166,7 @@ return  0
 
 ---
 
-## 🔹 Bonus Features (To Win Extra Points)
+## 🔹 Bonus Features 
 
 * Dashboard with an overall **Backup Security Score** (e.g., “Backup Security Score: 85/100”)
 * Time-series graphs showing ransomware detection trends and backup health
